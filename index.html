@@ -82,7 +82,7 @@ const HINTS={"EV-01": ["Provate a leggerlo allo specchio.", "Si legge da destra 
 const HEVS=Object.keys(HINTS);const baseEv=h=>h.replace(/[AB]$/,"");
 const ans=(ev,k)=>{const a=KEY[ev];return k==="tpc"&&a[1]?a[1]:a[0]};
 const CLIPS=[["team_SENSEI","Parla la collaborazione SENSEI."],["team_DAMIC","Parla la collaborazione DAMIC."],["team_XENON","Parla la collaborazione XENON."],["team_DarkSide","Parla la collaborazione DarkSide."],["segnale_ok","Confermato! Candidato materia oscura. Preparate il discorso per Stoccolma."],["fondo_ok","Corretto. È fondo, e avete trovato il colpevole."],["fondo_quasi","È fondo, sì. Ma il colpevole è un altro."],["errore","Respinto. Il revisore numero due è molto deluso da voi."],["super_attesa","Silenzio in sala. È arrivato il Super-evento."],["super_ok","Scoperta! Il Super-evento è materia oscura!"],["super_ko","Niente da fare. Il Super-evento vi ha ingannati."],["gia_risolto","Questo evento è già stato risolto da un'altra squadra."],["gia_tentato","Questo evento vi ha già respinti. Lasciatelo andare."],["indizio","Richiesta di aiuto accolta. Vi costa un punto."]];
-const fresh=()=>({teams:Object.fromEntries(TEAMS.map((t,i)=>[t.id,{pin:String(i+1).repeat(4),pts:4,seg:0,fon:0,err:0,ind:0}])),ev:Object.fromEntries(EVS.map(e=>[e,{by:null,failed:[]}])),log:[],hints:{},admin:"laurea"});
+const fresh=()=>({teams:Object.fromEntries(TEAMS.map((t,i)=>[t.id,{pin:String(i+1).repeat(4),pts:4,seg:0,fon:0,err:0,ind:0}])),ev:Object.fromEntries(EVS.map(e=>[e,{by:null,failed:[]}])),log:[],hints:{},admin:"regia"});
 let G=fresh(),clips={},busy=false,flow={};
 const $=s=>document.querySelector(s),esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>(n>0?"+":"")+String(n).replace(".",",");
@@ -99,7 +99,7 @@ async function delClip(k){delete clips[k];await tx("readwrite",st=>st.delete(k))
 async function loadClips(){try{for(const[k]of CLIPS){const v=await tx("readonly",st=>st.get(k));if(v)clips[k]=v}}catch(e){}if(view()==="regia"&&typeof unlocked!=="undefined"&&unlocked)renderRegia()}
 addEventListener("storage",e=>{if(e.key==="centro_state"&&e.newValue){try{G=JSON.parse(e.newValue);fix();renderScore();if(view()==="regia"&&unlocked)renderRegia()}catch(_){}}});
 
-/* --- voce: registrazione di Marco, altrimenti voce sintetica --- */
+/* --- voce: registrazione dell'organizzatore, altrimenti voce sintetica --- */
 const playUrl=u=>new Promise(r=>{const a=new Audio(u);a.onended=r;a.onerror=r;a.play().catch(r)});
 async function say(k){const txt=(CLIPS.find(c=>c[0]===k)||[,""])[1];if(clips[k])return playUrl(clips[k]);
   if("speechSynthesis"in window)return new Promise(r=>{const u=new SpeechSynthesisUtterance(txt);u.lang="it-IT";u.onend=r;u.onerror=r;speechSynthesis.speak(u)})}
@@ -153,9 +153,9 @@ $("#v-consegna").addEventListener("click",ev=>{const b=ev.target.closest("button
   else if(d.v){flow.v=d.v;if(d.v==="S"){flow.c="";confirmStep()}else askColp()}
   else if(d.c){flow.c=d.c;confirmStep()}});
 
-/* --- regia (solo per Marco) --- */
+/* --- regia --- */
 let unlocked=false;
-function renderRegia(){const el=$("#v-regia");if(!unlocked){el.innerHTML=`<h2>Regia</h2><form id="lock" class="row"><input id="pw" type="password" placeholder="Password della regia" style="max-width:280px" aria-label="Password"><button>Entra</button></form><p class="note">La password iniziale è «laurea»: cambiala qui dentro prima della festa.</p>`;return}
+function renderRegia(){const el=$("#v-regia");if(!unlocked){el.innerHTML=`<h2>Regia</h2><form id="lock" class="row"><input id="pw" type="password" placeholder="Password della regia" style="max-width:280px" aria-label="Password"><button>Entra</button></form><p class="note">La password iniziale è «regia»: cambiala qui dentro prima della festa.</p>`;return}
   el.innerHTML=`<h2>Regia</h2>
   <h3>Codici delle squadre</h3><div class="grid g4">${TEAMS.map(t=>`<label>${t.id}<input data-pin="${t.id}" inputmode="numeric" maxlength="4" value="${esc(G.teams[t.id].pin)}"></label>`).join("")}</div>
   <p class="row" style="margin-top:10px"><label style="flex:1;max-width:280px">Password regia<input id="newpw" value="${esc(G.admin)}"></label><button data-a="savecfg">Salva codici e password</button></p>
