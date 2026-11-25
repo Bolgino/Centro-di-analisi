@@ -102,7 +102,7 @@ const HEVS=Object.keys(HINTS);const baseEv=h=>h.replace(/[AB]$/,"");
 const ans=(ev,k)=>{const a=KEY[ev];return k==="tpc"&&a[1]?a[1]:a[0]};
 
 
-const CLIPS=[["team_SENSEI","Parla la collaborazione SENSEI."],["team_DAMIC","Parla la collaborazione DAMIC."],["team_XENON","Parla la collaborazione XENON."],["team_DarkSide","Parla la collaborazione DarkSide."],["segnale_ok","Confermato! Candidato materia oscura. Preparate il discorso per Stoccolma."],["fondo_ok","Corretto. È fondo, e avete trovato il colpevole."],["fondo_quasi","È fondo, sì. Ma il colpevole è un altro."],["errore","Respinto. Il revisore numero due è molto deluso da voi."],["super_attesa","Silenzio in sala. È arrivato il Super-evento."],["super_ok","Scoperta! Il Super-evento è materia oscura!"],["super_ko","Niente da fare. Il Super-evento vi ha ingannati."],["gia_risolto","Questo evento è già chiuso."],["gia_tentato","Questo evento vi ha già respinti. Lasciatelo andare."],["indizio","Ha chiesto un indizio. Un punto in meno."]];
+const CLIPS=[["team_SENSEI","Parla la collaborazione SENSEI."],["team_DAMIC","Parla la collaborazione DAMIC."],["team_XENON","Parla la collaborazione XENON."],["team_DarkSide","Parla la collaborazione DarkSide."],["segnale_ok","Confermato! Candidato materia oscura. Preparate il discorso per Stoccolma."],["fondo_ok","Corretto. È fondo, e avete trovato il colpevole."],["fondo_quasi","È fondo, sì. Ma il colpevole è un altro."],["errore","Respinto. Il revisore numero due è molto deluso da voi."],["super_attesa","Silenzio in sala. È arrivato il Super-evento."],["super_ok","Scoperta! Il Super-evento è materia oscura!"],["super_ko","Niente da fare. Il Super-evento vi ha ingannati."],["gia_risolto","Questo evento è già chiuso."],["gia_tentato","Questo evento vi ha già respinti. Lasciatelo andare."],["indizio","Ha chiesto un indizio. Un punto in meno."],["bonus","E siete i primi a risolverlo: un punto bonus!"]];
 const fresh=()=>({teams:Object.fromEntries(TEAMS.map((t,i)=>[t.id,{pin:String(i+1).repeat(4),pts:4,seg:0,fon:0,err:0,ind:0}])),ev:Object.fromEntries(EVS.map(e=>[e,{solved:[],failed:[],first:null}])),log:[],hints:{},admin:"regia",gen:1});
 const $=s=>document.querySelector(s),esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>(n>0?"+":"")+String(n).replace(".",",");
@@ -171,7 +171,9 @@ function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open("centro_voci"
 async function tx(mode,fn){const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction("clips",mode);const r=fn(t.objectStore("clips"));t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>ko(t.error)})}
 async function loadClips(){try{for(const[k]of CLIPS){const v=await tx("readonly",st=>st.get(k));if(v)clips[k]=v}}catch(e){}}
 const playUrl=u=>new Promise(r=>{const a=new Audio(u);a.onended=r;a.onerror=r;a.play().catch(r)});
-async function say(k){const txt=(CLIPS.find(c=>c[0]===k)||[,""])[1];if(clips[k])return playUrl(clips[k]);
+const VOCI={sara:"Sara",nicola:"Nicola"};let voce=localStorage.getItem("centro_voce")||"sara";
+const playDef=k=>new Promise(r=>{const a=new Audio(`audio/${voce}/${k}.mp3`);a.onended=()=>r(true);a.onerror=()=>r(false);a.play().catch(()=>r(false))});
+async function say(k){const txt=(CLIPS.find(c=>c[0]===k)||[,""])[1];if(clips[k])return playUrl(clips[k]);if(await playDef(k))return;
   if("speechSynthesis"in window)return new Promise(r=>{const u=new SpeechSynthesisUtterance(txt);u.lang="it-IT";u.onend=r;u.onerror=r;speechSynthesis.speak(u);setTimeout(r,15000)})}
 
 /* ================= VISTA PORTAVOCE (telefono) ================= */
@@ -198,7 +200,7 @@ function confirmHint(){const l=lvl(G,flow.h,me.team)+1;P(`<div class="crumbs">${
 async function send(){if(busy)return;busy=true;P(`<div class="result"><div class="verdict" style="font-size:32px">Analisi in corso…</div></div>`);
   try{const f={...flow};const r=await store.transact(g=>judgeOn(fix(g),me.team,me.pin,f.ev,f.v,f.c));
     if(r.auth){me=null;localStorage.removeItem("centro_me");busy=false;flow={};return pickTeam()}
-    store.announce({kind:"verdetto",team:me.team,ev:f.ev,clip:r.clip,sup:!!r.sup,msg:r.msg,pts:r.pts,bad:!!r.bad}).catch(()=>{});
+    store.announce({kind:"verdetto",team:me.team,ev:f.ev,clip:r.clip,sup:!!r.sup,msg:r.msg,pts:r.pts,bad:!!r.bad,bonus:!!r.bonus}).catch(()=>{});
     P(`<div class="result"><div class="crumbs">${esc(me.team)} · ${esc(f.ev)}</div>${r.bad?'<div class="stamp">RESPINTO</div>':""}<div class="verdict">${esc(r.msg)}</div><div class="pts">${esc(fmt(r.pts))} punti</div><div class="todo">${esc(r.todo)}</div><p style="margin-top:22px"><button class="big" data-k="home">Fatto</button></p></div>`)}
   catch(e){P(`<p class="err">Consegna non riuscita (${esc(e.code||e.message)}). Controllate la connessione e riprovate.</p><p><button class="big" data-k="home">Indietro</button></p>`)}
   busy=false;flow.step="res"}
@@ -236,7 +238,7 @@ async function playQueue(){if(playing)return;playing=true;
     if(a.kind==="indizio")ov.innerHTML=`<div class="crumbs">${esc(a.team)}</div><div class="verdict">Richiesta di indizio</div><div class="pts">−1</div>`;
     else ov.innerHTML=`<div class="crumbs">${esc(a.team)} · ${esc(a.ev)}</div>${a.bad?'<div class="stamp">RESPINTO</div>':""}<div class="verdict">${a.sup?"SUPER-EVENTO<br>":""}${esc(a.msg)}</div><div class="pts">${esc(fmt(a.pts))}</div>`;
     ov.classList.remove("hide");
-    if(audioOn){await say("team_"+a.team);if(a.sup)await say("super_attesa");await say(a.clip)}
+    if(audioOn){await say("team_"+a.team);if(a.sup)await say("super_attesa");await say(a.clip);if(a.bonus)await say("bonus")}
     await new Promise(r=>setTimeout(r,audioOn?2500:6000));ov.classList.add("hide")}
   playing=false}
 
@@ -247,8 +249,8 @@ function renderRegia(){const el=$("#v-regia");if(!G){el.innerHTML="<p class='not
   el.innerHTML=`<h2>Regia</h2>
   <h3>Codici delle squadre</h3><div class="grid g4">${TEAMS.map(t=>`<label>${t.id}<input data-pin="${t.id}" inputmode="numeric" maxlength="4" value="${esc(G.teams[t.id].pin)}"></label>`).join("")}</div>
   <p class="row" style="margin-top:10px"><label style="flex:1;max-width:280px">Password regia<input id="newpw" value="${esc(G.admin)}"></label><button data-a="savecfg">Salva codici e password</button></p>
-  <h3>Voci registrate da te</h3><p class="note">Caricale da <b>questo computer</b>, quello collegato alle casse: le voci restano salvate qui. Dove manca una registrazione parla la voce sintetica.</p>
-  <table><tbody>${CLIPS.map(([k,txt])=>`<tr><td>${esc(txt)}</td><td style="white-space:nowrap">${clips[k]?"✔ tua voce":"voce sintetica"}</td><td class="row"><label class="btn">Carica<input type="file" accept="audio/*" data-up="${k}" class="hide"></label><button data-play="${k}">Ascolta</button>${clips[k]?`<button data-del="${k}">Togli</button>`:""}</td></tr>`).join("")}</tbody></table>
+  <h3>Voci</h3><p class="row">Voce predefinita: ${Object.entries(VOCI).map(([k,n])=>`<button data-voce="${k}" ${k===voce?'class="seg"':""}>${n}</button>`).join("")}</p><p class="note">Se vuoi, sostituisci le frasi con la tua voce. Caricale da <b>questo computer</b>, quello collegato alle casse: restano salvate qui. Dove non c\'è una tua registrazione parla la voce predefinita.</p>
+  <table><tbody>${CLIPS.map(([k,txt])=>`<tr><td>${esc(txt)}</td><td style="white-space:nowrap">${clips[k]?"✔ tua voce":"voce "+VOCI[voce]}</td><td class="row"><label class="btn">Carica<input type="file" accept="audio/*" data-up="${k}" class="hide"></label><button data-play="${k}">Ascolta</button>${clips[k]?`<button data-del="${k}">Togli</button>`:""}</td></tr>`).join("")}</tbody></table>
   <h3>Correzioni</h3><div class="grid g4">${TEAMS.map(t=>`<div class="row"><b style="flex:1">${t.id}</b><button data-adj="${t.id}" data-n="-1">−1</button><button data-adj="${t.id}" data-n="1">+1</button></div>`).join("")}</div>
   <p class="row" style="margin-top:10px"><button data-a="undo" ${G.log.length?"":"disabled"}>Annulla l'ultima operazione</button><button data-a="reset">Azzera la partita</button><span id="rmsg" class="note"></span></p>
   <h3>Eventi</h3><table><tbody>${EVS.map(e=>{const s=G.ev[e];return`<tr><td>${e}</td><td>${s.solved.length?"risolto da "+s.solved.map(q=>esc(q)+(q===s.first?" (primi)":"")).join(", "):"nessuno"}</td><td class="note">${s.failed.length?"sbagliato da "+s.failed.map(esc).join(", "):""}</td></tr>`}).join("")}</tbody></table>`}
@@ -257,6 +259,7 @@ function bindRegia(){const el=$("#v-regia");
   el.addEventListener("submit",e=>{e.preventDefault();if(G&&$("#pw").value===G.admin){unlocked=true;renderRegia()}else $("#pw").value=""});
   el.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
     if(d.play)say(d.play);
+    if(d.voce){voce=d.voce;localStorage.setItem("centro_voce",voce);renderRegia();say("team_SENSEI")}
     if(d.del){delete clips[d.del];await tx("readwrite",st=>st.delete(d.del));renderRegia()}
     if(d.adj)await store.transact(g=>{g.teams[d.adj].pts=r1(g.teams[d.adj].pts+Number(d.n))});
     if(d.a==="savecfg"){const pins={};document.querySelectorAll("[data-pin]").forEach(i=>{if(/^\d{4}$/.test(i.value))pins[i.dataset.pin]=i.value});const pw=$("#newpw").value;
