@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Centro di Analisi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: un terminale di laboratorio segreto, teatrale ma chiarissimo da leggere a due metri.
+   IDEA: la consolle del Centro di Analisi, come l'invito "classified".
+   PICTURE: la consolle stessa: tabellone in alto, la consegna guidata a pulsanti grandi.
+   COLOUR and TYPE: antracite, oro, rosso timbro; Special Elite per i titoli, Inter per il resto.
+   LAYOUT: una colonna larga; tabellone a 4 tessere, poi il passo corrente della consegna. */
+:root{color-scheme:dark;--bg:#14161a;--panel:#1c1f25;--line:#3a3628;--gold:#b9a77a;--ink:#ece7da;--dim:#9a9484;--red:#c0392b;--ok:#3f9a62;--warn:#d39b2a}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{background:#b3261e;color:#fff;text-align:center;font-weight:800;letter-spacing:.6em;padding:8px 0;font-size:14px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:18px max(4vw,16px) 6px}
+h1{font-family:"Special Elite",monospace;font-weight:400;font-size:clamp(28px,4vw,44px);margin:0;line-height:1.05}
+h2{font-family:"Special Elite",monospace;font-weight:400;font-size:26px;margin:0 0 12px}
+.sub{color:var(--gold);font-size:14px}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:10px;min-height:48px;padding:10px 16px;cursor:pointer}
+button:hover{border-color:var(--gold)}button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.3;cursor:not-allowed}
+.wrap{padding:8px max(4vw,16px) 40px;max-width:1240px;margin:0 auto}
+.score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 22px}
+.team{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+.team .n{font-family:"Special Elite",monospace;font-size:24px}
+.team .p{font-size:clamp(34px,5vw,56px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.team .s{color:var(--dim);font-size:13px}
+.team.lead{border-color:var(--gold)}
+.console{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:clamp(16px,3vw,28px)}
+.grid{display:grid;gap:10px}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g6{grid-template-columns:repeat(6,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.big{font-size:22px;font-weight:800;min-height:88px}
+.pick.ev{font-family:"Special Elite",monospace;font-size:19px}
+.seg{border-color:var(--ok)}.fon{border-color:var(--red)}
+.pin{display:flex;gap:10px;justify-content:center;margin:8px 0 14px}
+.pin span{width:46px;height:56px;border:1.5px solid var(--line);border-radius:10px;display:grid;place-items:center;font-size:28px}
+.keys{max-width:360px;margin:0 auto}
+.crumbs{color:var(--gold);margin-bottom:12px;font-size:15px}
+.result{text-align:center;padding:12px 0}
+.verdict{font-family:"Special Elite",monospace;font-size:clamp(34px,6vw,64px);line-height:1.05;margin:6px 0}
+.pts{font-size:clamp(28px,4vw,44px);font-weight:800}
+.todo{display:inline-block;margin-top:14px;padding:12px 16px;border:2px dashed var(--gold);border-radius:12px;font-size:19px}
+.stamp{display:inline-block;border:5px solid var(--red);color:var(--red);font-family:"Special Elite",monospace;font-size:30px;padding:4px 16px;transform:rotate(-6deg)}
+.feed{margin-top:22px}.feed li{color:var(--dim);margin:4px 0}
+.note{color:var(--dim);font-size:14px}
+.err{color:#ff8a7a}
+table{border-collapse:collapse;width:100%;font-size:15px}td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+input{font:inherit;font-size:16px;background:#0f1114;color:var(--ink);border:1.5px solid var(--line);border-radius:8px;padding:10px;min-height:44px;width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tv .score{grid-template-columns:repeat(2,minmax(0,1fr))}.tv .team .p{font-size:clamp(48px,9vw,120px)}
+.hide{display:none!important}
+@media(max-width:700px){.score,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(prefers-reduced-motion:no-preference){.result{animation:pop .35s ease-out}@keyframes pop{from{transform:scale(.96);opacity:0}}}
+</style>
+</head>
+<body>
+<div class="band">CLASSIFIED</div>
+<header>
+  <div><h1>Centro di Analisi</h1><div class="sub" id="status"></div></div>
+  <nav><button data-go="">Consegna</button><button data-go="tabellone">Tabellone</button><button data-go="regia">Regia</button></nav>
+</header>
+<div class="wrap">
+  <section class="score" id="score" aria-label="Classifica"></section>
+  <section id="v-consegna" class="console" aria-live="polite"></section>
+  <section id="v-tabellone" class="hide"><h2>Ultimi verdetti</h2><ol class="feed" id="feed"></ol></section>
+  <section id="v-regia" class="console hide"></section>
+</div>
+<div class="band">CLASSIFIED</div>
+<script>
+{
+const TEAMS=[{id:"SENSEI",k:"ccd"},{id:"DAMIC",k:"ccd"},{id:"XENON",k:"tpc"},{id:"DarkSide",k:"tpc"}];
+const COLP=["Muone","Neutrone","Superficie","Gamma","Neutrino solare","Rumore","Caso incompleto"];
+const S={s:"S"},F=c=>({s:"F",c});
+const KEY={"EV-01":[S,S],"EV-02":[F("Gamma")],"EV-03":[S,F("Rumore")],"EV-04":[F("Neutrone")],"EV-05":[F("Gamma")],"EV-06":[S],"EV-07":[F("Muone")],"EV-08":[F("Superficie")],"EV-09":[S],"EV-10":[S,F("Rumore")],"EV-11":[S],"EV-12":[S],"EV-13":[F("Superficie")],"EV-14":[F("Neutrone")],"EV-15":[F("Caso incompleto")],"EV-16":[F("Rumore")],"EV-17":[S],"EV-18":[F("Rumore")],"EV-19":[F("Neutrino solare")],"EV-20":[F("Muone")],"EV-21":[S,F("Rumore")],"EV-22":[F("Gamma")],"EV-23":[F("Superficie")],"SUPER":[S]};
+const EVS=Object.keys(KEY);
+const HINTS={"EV-01": ["Provate a leggerlo allo specchio.", "Si legge da destra a sinistra."], "EV-02": ["L'alfabeto è stato piegato a metà.", "La prima lettera diventa l'ultima, la seconda la penultima: A↔Z, B↔Y…"], "EV-03": ["Ogni lettera è stata spostata dello stesso numero di posti.", "La chiave dice in cosa si è trasformata la A: contate quanti posti e tornate indietro."], "EV-04": ["Sono numeri, scritti come li scrive un computer.", "Cinque cifre per lettera, che valgono 16, 8, 4, 2, 1. Il numero che esce è il posto della lettera nell'alfabeto (A=1)."], "EV-05": ["Ogni lettera ha il suo posto in fila.", "A=1, B=2 … Z=26."], "EV-06": ["Due cifre per lettera: riga e colonna di una griglia 5×5.", "La griglia comincia con la chiave, poi il resto dell'alfabeto. I e J stanno nella stessa casella."], "EV-07": ["Due sole lettere a gruppi di cinque: come uno 0 e un 1.", "A vale 0 e B vale 1, a gruppi di cinque. Si parte da zero: AAAAA è la A, AAAAB la B."], "EV-08": ["Ogni lettera è stata spostata dello stesso numero di posti.", "La chiave dice in cosa si è trasformata la A: contate quanti posti e tornate indietro."], "EV-09": ["La chiave si scrive sotto il messaggio, ripetuta. Usate la tabella delle lettere.", "Riga = lettera della chiave; cercate in quella riga la lettera cifrata; la colonna vi dà la lettera vera."], "EV-10": ["Pensate ai vecchi SMS.", "Il numero è il tasto, quante volte è ripetuto dice la lettera: 222 = C."], "EV-11": ["L'alfabeto è stato piegato a metà.", "La prima lettera diventa l'ultima, la seconda la penultima: A↔Z, B↔Y…"], "EV-12A": ["Sono numeri, scritti come li scrive un computer.", "Cinque cifre per lettera, che valgono 16, 8, 4, 2, 1. Il numero che esce è il posto della lettera nell'alfabeto (A=1)."], "EV-12B": ["Avete la tabella giusta sul Foglio dei codici.", "È Morse."], "EV-13A": ["Due sole lettere a gruppi di cinque: come uno 0 e un 1.", "A vale 0 e B vale 1, a gruppi di cinque. Si parte da zero: AAAAA è la A, AAAAB la B."], "EV-13B": ["Ogni lettera è stata spostata dello stesso numero di posti.", "La chiave dice in cosa si è trasformata la A: contate quanti posti e tornate indietro."], "EV-14": ["Le lettere sono quelle giuste, ma in disordine. Ogni gruppo è una colonna.", "Scrivete la chiave in orizzontale e mettete i gruppi sotto le sue lettere in ordine alfabetico; poi leggete per righe."], "EV-15": ["Due cifre per lettera: riga e colonna di una griglia 5×5.", "La griglia comincia con la chiave, poi il resto dell'alfabeto. I e J stanno nella stessa casella."], "EV-16": ["Avete la tabella giusta sul Foglio dei codici.", "È Morse."], "EV-17": ["La chiave si scrive sotto il messaggio, ripetuta. Usate la tabella delle lettere.", "Riga = lettera della chiave; cercate in quella riga la lettera cifrata; la colonna vi dà la lettera vera."], "EV-18": ["Le lettere sono quelle giuste, ma in disordine. Ogni gruppo è una colonna.", "Scrivete la chiave in orizzontale e mettete i gruppi sotto le sue lettere in ordine alfabetico; poi leggete per righe."], "EV-19": ["La chiave si scrive sotto il messaggio, ripetuta. Usate la tabella delle lettere.", "Riga = lettera della chiave; cercate in quella riga la lettera cifrata; la colonna vi dà la lettera vera."], "EV-20": ["Avete la tabella giusta sul Foglio dei codici.", "È Morse."], "EV-21": ["Come Vigenère, ma la tabella si usa al contrario.", "Colonna = lettera cifrata; cercate in quella colonna la lettera della chiave; la riga vi dà la lettera vera."], "EV-22": ["Pensate ai vecchi SMS.", "Il numero è il tasto, quante volte è ripetuto dice la lettera: 222 = C."], "EV-23": ["Sono numeri, scritti come li scrive un computer.", "Cinque cifre per lettera, che valgono 16, 8, 4, 2, 1. Il numero che esce è il posto della lettera nell'alfabeto (A=1)."], "SUPER": ["Griglia 5×5 con la chiave; le lettere vanno lette a coppie.", "Stessa riga: lettera a sinistra. Stessa colonna: lettera sopra. Altrimenti: angoli opposti del rettangolo."]};
+const HEVS=Object.keys(HINTS);const baseEv=h=>h.replace(/[AB]$/,"");
+const ans=(ev,k)=>{const a=KEY[ev];return k==="tpc"&&a[1]?a[1]:a[0]};
+const CLIPS=[["team_SENSEI","Parla la collaborazione SENSEI."],["team_DAMIC","Parla la collaborazione DAMIC."],["team_XENON","Parla la collaborazione XENON."],["team_DarkSide","Parla la collaborazione DarkSide."],["segnale_ok","Confermato! Candidato materia oscura. Preparate il discorso per Stoccolma."],["fondo_ok","Corretto. È fondo, e avete trovato il colpevole."],["fondo_quasi","È fondo, sì. Ma il colpevole è un altro."],["errore","Respinto. Il revisore numero due è molto deluso da voi."],["super_attesa","Silenzio in sala. È arrivato il Super-evento."],["super_ok","Scoperta! Il Super-evento è materia oscura!"],["super_ko","Niente da fare. Il Super-evento vi ha ingannati."],["gia_risolto","Questo evento è già stato risolto da un'altra squadra."],["gia_tentato","Questo evento vi ha già respinti. Lasciatelo andare."],["indizio","Richiesta di aiuto accolta. Vi costa un punto."]];
+const fresh=()=>({teams:Object.fromEntries(TEAMS.map((t,i)=>[t.id,{pin:String(i+1).repeat(4),pts:4,seg:0,fon:0,err:0,ind:0}])),ev:Object.fromEntries(EVS.map(e=>[e,{by:null,failed:[]}])),log:[],hints:{},admin:"laurea"});
+let G=fresh(),clips={},busy=false,flow={};
+const $=s=>document.querySelector(s),esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>(n>0?"+":"")+String(n).replace(".",",");
+const setStatus=t=>$("#status").textContent=t;
+
+/* --- archivio: questo browser (localStorage per la partita, IndexedDB per le voci) --- */
+function fix(){G.hints=G.hints||{};TEAMS.forEach(t=>{G.teams[t.id].ind=G.teams[t.id].ind||0})}
+function loadLocal(){try{const j=localStorage.getItem("centro_state");if(j)G=JSON.parse(j)}catch(e){}fix()}
+async function save(){try{localStorage.setItem("centro_state",JSON.stringify(G))}catch(e){setStatus("Attenzione: salvataggio non riuscito")}}
+function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open("centro_voci",1);r.onupgradeneeded=()=>r.result.createObjectStore("clips");r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)})}
+async function tx(mode,fn){const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction("clips",mode);const st=t.objectStore("clips");const r=fn(st);t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>ko(t.error)})}
+async function saveClip(k,dataUrl){clips[k]=dataUrl;await tx("readwrite",st=>st.put(dataUrl,k))}
+async function delClip(k){delete clips[k];await tx("readwrite",st=>st.delete(k))}
+async function loadClips(){try{for(const[k]of CLIPS){const v=await tx("readonly",st=>st.get(k));if(v)clips[k]=v}}catch(e){}if(view()==="regia"&&typeof unlocked!=="undefined"&&unlocked)renderRegia()}
+addEventListener("storage",e=>{if(e.key==="centro_state"&&e.newValue){try{G=JSON.parse(e.newValue);fix();renderScore();if(view()==="regia"&&unlocked)renderRegia()}catch(_){}}});
+
+/* --- voce: registrazione di Marco, altrimenti voce sintetica --- */
+const playUrl=u=>new Promise(r=>{const a=new Audio(u);a.onended=r;a.onerror=r;a.play().catch(r)});
+async function say(k){const txt=(CLIPS.find(c=>c[0]===k)||[,""])[1];if(clips[k])return playUrl(clips[k]);
+  if("speechSynthesis"in window)return new Promise(r=>{const u=new SpeechSynthesisUtterance(txt);u.lang="it-IT";u.onend=r;u.onerror=r;speechSynthesis.speak(u)})}
+
+/* --- tabellone --- */
+function renderScore(){const max=Math.max(...TEAMS.map(t=>G.teams[t.id].pts));
+  $("#score").innerHTML=TEAMS.map(t=>{const x=G.teams[t.id];return`<div class="team ${x.pts===max&&TEAMS.some(o=>G.teams[o.id].pts<max)?"lead":""}"><div class="n">${esc(t.id)}</div><div class="p">${esc(String(x.pts).replace(".",","))}</div><div class="s">${x.seg} segnali · ${x.fon} fondi · ${x.err} errori · ${x.ind||0} indizi</div></div>`}).join("");
+  $("#feed").innerHTML=G.log.slice(-12).reverse().map(l=>`<li><b>${esc(l.team)}</b> · ${esc(l.ev)} · ${esc(l.txt)} (${esc(fmt(l.pts))})</li>`).join("")||"<li>Ancora nessuna consegna.</li>"}
+
+/* --- consegna guidata --- */
+function step(html){$("#v-consegna").innerHTML=html}
+function start(){flow={};step(`<h2>Portavoce, a voi</h2><p class="note">Scegliete la vostra squadra: poi potrete consegnare un evento o chiedere un indizio.</p><div class="grid g4">${TEAMS.map(t=>`<button class="big" data-team="${t.id}">${t.id}</button>`).join("")}</div>`)}
+function askPin(){step(`<div class="crumbs">${esc(flow.team)}</div><h2>Codice della squadra</h2><div class="pin">${[0,1,2,3].map(i=>`<span>${flow.pin&&flow.pin[i]?"•":""}</span>`).join("")}</div><div class="grid g3 keys">${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="big" data-k="${n}">${n}</button>`).join("")}<button data-k="x">Annulla</button><button class="big" data-k="0">0</button><button data-k="b">⌫</button></div>${flow.bad?'<p class="err" style="text-align:center">Codice sbagliato.</p>':""}`)}
+function askWhat(){step(`<div class="crumbs">${esc(flow.team)} · identificata</div><h2>Cosa volete fare?</h2><div class="grid g2"><button class="big seg" data-w="cons">Consegnare un evento</button><button class="big" data-w="hint">Chiedere un indizio<br><small>costa 1 punto</small></button></div><p><button data-k="x">Annulla</button></p>`)}
+const lvl=(h,t)=>((G.hints[h]||{})[t]||0);
+function askHint(){const t=flow.team,p=G.teams[t].pts;step(`<div class="crumbs">${esc(t)} · indizio</div><h2>Su quale foglietto?</h2><p class="note">Ogni indizio costa 1 punto. Per ogni foglietto ci sono due indizi: il secondo è più esplicito. Avete ${esc(String(p).replace(".",","))} punti.</p>${p<1?'<p class="err">Non avete abbastanza punti per un indizio.</p>':""}<div class="grid g6">${HEVS.map(h=>{const s=G.ev[baseEv(h)];const l=lvl(h,t);const off=p<1||s.by||l>=2;return`<button class="pick ev" data-h="${h}" ${off?"disabled":""}>${h}${l?`<br><small>${l}/2</small>`:""}</button>`}).join("")}</div><p><button data-k="x">Annulla</button></p>`)}
+function confirmHint(){const l=lvl(flow.h,flow.team)+1;step(`<div class="crumbs">${esc(flow.team)} · ${esc(flow.h)}</div><h2>Indizio ${l} di 2 su ${esc(flow.h)}</h2><p style="font-size:22px">Costa <b>1 punto</b>. Confermate?</p><div class="grid g2"><button data-k="x">No, ricomincia</button><button class="big" data-k="hok">Sì, dateci l'indizio</button></div>`)}
+async function giveHint(){if(busy)return;busy=true;const t=flow.team,h=flow.h,l=lvl(h,t)+1;
+  if(G.teams[t].pts<1||l>2){busy=false;return start()}
+  G.hints[h]=G.hints[h]||{};G.hints[h][t]=l;G.teams[t].pts=Math.round((G.teams[t].pts-1)*10)/10;G.teams[t].ind++;
+  G.log.push({t:Date.now(),type:"hint",team:t,ev:h,txt:"indizio "+l,pts:-1});await save();renderScore();
+  step(`<div class="result"><div class="crumbs">${esc(t)} · ${esc(h)} · indizio ${l} di 2</div><div class="verdict">${esc(HINTS[h][l-1])}</div><div class="pts">−1 punto</div><div class="todo">Copiatelo sul foglietto: non verrà ripetuto.</div><p style="margin-top:24px"><button class="big" data-k="x">Fatto</button></p></div>`);
+  await say("team_"+t);await say("indizio");busy=false}
+function askEv(){const t=flow.team;step(`<div class="crumbs">${esc(t)} · identificata</div><h2>Quale foglietto consegnate?</h2><p class="note">Per i gemelli scegliete EV-12 o EV-13 e consegnate entrambe le metà.</p><div class="grid g6">${EVS.map(e=>{const s=G.ev[e];const off=s.by||s.failed.includes(t);return`<button class="pick ev" data-ev="${e}" ${off?"disabled":""} title="${s.by?"già risolto":s.failed.includes(t)?"già sbagliato da voi":""}">${e}</button>`}).join("")}</div><p><button data-k="x">Annulla</button></p>`)}
+function askVerdict(){step(`<div class="crumbs">${esc(flow.team)} · ${esc(flow.ev)}</div><h2>Il vostro verdetto</h2><div class="grid g2"><button class="big seg" data-v="S">Candidato materia oscura</button><button class="big fon" data-v="F">Fondo</button></div><p><button data-k="x">Annulla</button></p>`)}
+function askColp(){step(`<div class="crumbs">${esc(flow.team)} · ${esc(flow.ev)} · fondo</div><h2>Chi è il colpevole?</h2><div class="grid g4">${COLP.map(c=>`<button class="big" data-c="${c}">${c}</button>`).join("")}</div><p><button data-k="x">Annulla</button></p>`)}
+function confirmStep(){step(`<div class="crumbs">Riepilogo</div><h2>${esc(flow.team)} consegna ${esc(flow.ev)}</h2><p style="font-size:22px">Verdetto: <b>${flow.v==="S"?"candidato materia oscura":"fondo, "+esc(flow.c)}</b></p><div class="grid g2"><button data-k="x">Ricomincia</button><button class="big" data-k="ok">Consegna al Centro</button></div>`)}
+
+async function judge(){if(busy)return;busy=true;const t=flow.team,e=flow.ev,k=TEAMS.find(x=>x.id===t).k,st=G.ev[e];let r;
+  step(`<div class="result"><div class="crumbs">${esc(t)} · ${esc(e)}</div><div class="verdict">Analisi in corso…</div></div>`);
+  await say("team_"+t);
+  if(st.by){r={txt:"già risolto",pts:0,clip:"gia_risolto",msg:"Questo evento è già stato risolto.",todo:"Lasciate il foglietto nella scatola ARCHIVIO."}}
+  else if(st.failed.includes(t)){r={txt:"già respinto",pts:0,clip:"gia_tentato",msg:"Avete già sbagliato questo evento.",todo:"Rinascondete il foglietto nella stanza."}}
+  else{const a=ans(e,k),sup=e==="SUPER";if(sup)await say("super_attesa");
+    if(flow.v!==a.s){r={txt:"sbagliato",pts:sup?-3:-2,clip:sup?"super_ko":"errore",msg:"Verdetto respinto.",todo:"Rinascondete il foglietto nella stanza: un'altra squadra potrà provarci.",bad:1};st.failed.push(t);G.teams[t].err++}
+    else if(a.s==="S"){r={txt:"materia oscura, giusto",pts:sup?6:3,clip:sup?"super_ok":"segnale_ok",msg:"Candidato materia oscura confermato!",todo:"Imbucate il foglietto nella scatola ARCHIVIO."};st.by=t;G.teams[t].seg++}
+    else if(flow.c===a.c){r={txt:"fondo, colpevole giusto",pts:2.5,clip:"fondo_ok",msg:"Fondo, colpevole giusto: "+a.c+".",todo:"Imbucate il foglietto nella scatola ARCHIVIO."};st.by=t;G.teams[t].fon++}
+    else{r={txt:"fondo, colpevole sbagliato",pts:2,clip:"fondo_quasi",msg:"Fondo sì, ma il colpevole è un altro.",todo:"Imbucate il foglietto nella scatola ARCHIVIO."};st.by=t;G.teams[t].fon++}
+    G.teams[t].pts=Math.round((G.teams[t].pts+r.pts)*10)/10;G.log.push({t:Date.now(),team:t,ev:e,v:flow.v,c:flow.c||"",txt:r.txt,pts:r.pts});await save()}
+  renderScore();
+  step(`<div class="result"><div class="crumbs">${esc(t)} · ${esc(e)}</div>${r.bad?'<div class="stamp">RESPINTO</div>':""}<div class="verdict">${esc(r.msg)}</div><div class="pts">${esc(fmt(r.pts))} punti</div><div class="todo">${esc(r.todo)}</div><p style="margin-top:24px"><button class="big" data-k="x">Nuova consegna</button></p></div>`);
+  await say(r.clip);busy=false}
+
+$("#v-consegna").addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b||busy)return;const d=b.dataset;
+  if(d.team){flow={team:d.team,pin:""};askPin()}
+  else if(d.k!==undefined&&!d.ev){if(d.k==="x")return start();if(d.k==="ok")return judge();if(d.k==="hok")return giveHint();if(d.k==="b"){flow.pin=flow.pin.slice(0,-1);flow.bad=0;return askPin()}
+    flow.pin+=d.k;flow.bad=0;if(flow.pin.length<4)return askPin();if(flow.pin===G.teams[flow.team].pin)return askWhat();flow.pin="";flow.bad=1;askPin()}
+  else if(d.w){d.w==="hint"?askHint():askEv()}
+  else if(d.h){flow.h=d.h;confirmHint()}
+  else if(d.ev){flow.ev=d.ev;askVerdict()}
+  else if(d.v){flow.v=d.v;if(d.v==="S"){flow.c="";confirmStep()}else askColp()}
+  else if(d.c){flow.c=d.c;confirmStep()}});
+
+/* --- regia (solo per Marco) --- */
+let unlocked=false;
+function renderRegia(){const el=$("#v-regia");if(!unlocked){el.innerHTML=`<h2>Regia</h2><form id="lock" class="row"><input id="pw" type="password" placeholder="Password della regia" style="max-width:280px" aria-label="Password"><button>Entra</button></form><p class="note">La password iniziale è «laurea»: cambiala qui dentro prima della festa.</p>`;return}
+  el.innerHTML=`<h2>Regia</h2>
+  <h3>Codici delle squadre</h3><div class="grid g4">${TEAMS.map(t=>`<label>${t.id}<input data-pin="${t.id}" inputmode="numeric" maxlength="4" value="${esc(G.teams[t.id].pin)}"></label>`).join("")}</div>
+  <p class="row" style="margin-top:10px"><label style="flex:1;max-width:280px">Password regia<input id="newpw" value="${esc(G.admin)}"></label><button data-a="savecfg">Salva codici e password</button></p>
+  <h3>Voci registrate da te</h3><p class="note">Registra ogni frase col telefono (memo vocale), poi carica il file qui. Dove manca una registrazione parla la voce sintetica.</p>
+  <table><tbody>${CLIPS.map(([k,txt])=>`<tr><td>${esc(txt)}</td><td style="white-space:nowrap">${clips[k]?"✔ tua voce":"voce sintetica"}</td><td class="row"><label class="btn">Carica<input type="file" accept="audio/*" data-up="${k}" class="hide"></label><button data-play="${k}">Ascolta</button>${clips[k]?`<button data-del="${k}">Togli</button>`:""}</td></tr>`).join("")}</tbody></table>
+  <h3>Correzioni</h3><div class="grid g4">${TEAMS.map(t=>`<div class="row"><b style="flex:1">${t.id}</b><button data-adj="${t.id}" data-n="-1">−1</button><button data-adj="${t.id}" data-n="1">+1</button></div>`).join("")}</div>
+  <p class="row" style="margin-top:10px"><button data-a="undo" ${G.log.length?"":"disabled"}>Annulla l'ultima operazione</button><button data-a="reset">Azzera la partita</button><span id="rmsg" class="note"></span></p>
+  <h3>Eventi</h3><table><tbody>${EVS.map(e=>{const s=G.ev[e];return`<tr><td>${e}</td><td>${s.by?"risolto da "+esc(s.by):"in gioco"}</td><td class="note">${s.failed.length?"sbagliato da "+s.failed.map(esc).join(", "):""}</td></tr>`}).join("")}</tbody></table>`}
+let resetArm=0;
+$("#v-regia").addEventListener("submit",e=>{e.preventDefault();if($("#pw").value===G.admin){unlocked=true;renderRegia()}else $("#pw").value=""});
+$("#v-regia").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+  if(d.play)say(d.play);
+  if(d.del){await delClip(d.del);renderRegia()}
+  if(d.adj){G.teams[d.adj].pts+=Number(d.n);await save();renderScore()}
+  if(d.a==="savecfg"){document.querySelectorAll("[data-pin]").forEach(i=>{if(/^\d{4}$/.test(i.value))G.teams[i.dataset.pin].pin=i.value});if($("#newpw").value)G.admin=$("#newpw").value;await save();renderRegia();$("#rmsg").textContent="Salvato."}
+  if(d.a==="undo"){const l=G.log.pop();const x=G.teams[l.team],s=G.ev[l.ev];x.pts=Math.round((x.pts-l.pts)*10)/10;
+    if(l.type==="hint"){x.ind--;G.hints[l.ev][l.team]--}else if(l.pts<0){x.err--;s.failed=s.failed.filter(q=>q!==l.team)}else if(l.v==="S"){x.seg--;s.by=null}else{x.fon--;s.by=null}await save();renderScore();renderRegia()}
+  if(d.a==="reset"){if(Date.now()-resetArm>4000){resetArm=Date.now();$("#rmsg").textContent="Premi di nuovo entro 4 secondi per azzerare tutto.";return}
+    const keep={teams:G.teams,admin:G.admin};G=fresh();TEAMS.forEach(t=>G.teams[t.id].pin=keep.teams[t.id].pin);G.admin=keep.admin;await save();renderScore();renderRegia()}});
+$("#v-regia").addEventListener("change",async e=>{const k=e.target.dataset.up;if(!k||!e.target.files[0])return;const f=e.target.files[0];
+  if(f.size>2e6){alertMsg("File troppo grande: tieni la frase sotto i 20 secondi.");return}
+  const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});
+  try{await saveClip(k,url)}catch(er){alertMsg("Non riesco a salvare la voce su questo computer.")}renderRegia()});
+function alertMsg(t){const m=$("#rmsg");if(m)m.textContent=t}
+
+/* --- viste --- */
+const view=()=>location.hash.slice(1);
+function route(){const v=view();$("#v-consegna").classList.toggle("hide",v!=="");$("#v-tabellone").classList.toggle("hide",v!=="tabellone");$("#v-regia").classList.toggle("hide",v!=="regia");document.body.classList.toggle("tv",v==="tabellone");if(v==="regia")renderRegia()}
+document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b)location.hash=b.dataset.go});
+addEventListener("hashchange",route);
+
+loadLocal();renderScore();start();route();setStatus("Dati salvati su questo computer");
+loadClips();
+}
+</script>
+</body>
+</html>
